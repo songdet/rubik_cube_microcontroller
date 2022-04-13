@@ -185,6 +185,12 @@
     <Compile Include="control_communication.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="finite_state_machine.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="finite_state_machine.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="gripper.cpp">
       <SubType>compile</SubType>
     </Compile>

@@ -12,18 +12,26 @@
 
 #include <stdint.h>
 
-struct button_info {
-	uint8_t pin_mask;
-	char command;	
+enum ButtonType {
+	UNSET = 0,
+	START = 1,
+	STOP = 2,
+	RESET = 3
 };
+
+struct ButtonInfo {
+	uint8_t pin_mask;
+	ButtonType button_type;	
+};
+
+bool is_button_pushed();
+ButtonType get_pushed_button();
 
 class Button
 {
-	private:
-		uint8_t pin_mask;
 	public:
-		Button(uint8_t pin_mask, char command);
-		static button_info all_buttons[MAX_BUTTONS];
+		Button(uint8_t pin_mask, ButtonType button_type);
+		static ButtonInfo all_buttons[MAX_BUTTONS];
 		static uint8_t num_buttons;
 };
 

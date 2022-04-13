@@ -11,21 +11,23 @@
 
 #include <stdint.h>
 
+#define GRIPPER_CMD_WAIT_TIME_MS = 50;
+
 class Gripper {
 	private:
 		uint8_t channel;
-		uint8_t hl_high_byte;
-		uint8_t hl_low_byte;
-		uint8_t v_high_byte;
-		uint8_t v_low_byte;
-		uint8_t hr_high_byte;
-		uint8_t hr_low_byte;
+		uint8_t vl_high_byte;
+		uint8_t vl_low_byte;
+		uint8_t h_high_byte;
+		uint8_t h_low_byte;
+		uint8_t vr_high_byte;
+		uint8_t vr_low_byte;
 		void set_target(uint8_t high_byte, uint8_t low_byte);
 	public:
-		void set_horizontal_left();
-		void set_horizontal_right();
-		void set_vertical();
-		Gripper(uint8_t channel, uint16_t horizontal_left_pos, uint16_t vertical_pos, uint16_t horizontal_right_pos);	
+		void set_vertical_left();
+		void set_vertical_right();
+		void set_horizontal();
+		Gripper(uint8_t channel, uint16_t vertical_left_pos, uint16_t horizontal_pos, uint16_t vertical_right_pos);	
 };
 
 

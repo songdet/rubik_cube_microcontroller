@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include "gripper.h"
 #include "SWseriale.h"
+#include "wait.h"
 
 uint8_t get_low_byte(uint16_t input) {
 	return input & 0x7F;
@@ -20,17 +21,17 @@ uint8_t get_high_byte(uint16_t input) {
 	return (input >> 7) & 0x7F;
 }
 
-Gripper::Gripper(uint8_t channel, uint16_t horizontal_left_pos, uint16_t vertical_pos, uint16_t horizontal_right_pos) {
+Gripper::Gripper(uint8_t channel, uint16_t vertical_left_pos, uint16_t horizontal_pos, uint16_t vertical_right_pos) {
 	this->channel = channel;
 	
-	this->hl_low_byte = get_low_byte(horizontal_left_pos*4);
-	this->hl_high_byte = get_high_byte(horizontal_left_pos*4);
+	this->vl_low_byte = get_low_byte(vertical_left_pos*4);
+	this->vl_high_byte = get_high_byte(vertical_left_pos*4);
 	
-	this->v_low_byte  = get_low_byte(vertical_pos*4);
-	this->v_high_byte = get_high_byte(vertical_pos*4);
+	this->h_low_byte  = get_low_byte(horizontal_pos*4);
+	this->h_high_byte = get_high_byte(horizontal_pos*4);
 	
-	this->hr_low_byte = get_low_byte(horizontal_right_pos*4);
-	this->hr_high_byte = get_high_byte(horizontal_right_pos*4);
+	this->vr_low_byte = get_low_byte(vertical_right_pos*4);
+	this->vr_high_byte = get_high_byte(vertical_right_pos*4);
 }
 
 void Gripper::set_target(uint8_t high_byte, uint8_t low_byte) {
@@ -40,18 +41,19 @@ void Gripper::set_target(uint8_t high_byte, uint8_t low_byte) {
 	serial_bytes[2] = low_byte; // Set target low byte
 	serial_bytes[3] = high_byte; // Set target high byte
 	SWseriale_write(serial_bytes, 4);
+	wait(GRIPPER_CMD_WAIT_TIME_MS, 2);
 }
 
-void Gripper::set_horizontal_left() {
-	this->set_target(hl_high_byte, hl_low_byte);
+void Gripper::set_vertical_left() {
+	this->set_target(vl_high_byte, vl_low_byte);
 }
 
-void Gripper::set_vertical() {
-	this->set_target(v_high_byte, v_low_byte);
+void Gripper::set_horizontal() {
+	this->set_target(h_high_byte, h_low_byte);
 }
 
-void Gripper::set_horizontal_right() {
-	this->set_target(hr_high_byte, hr_low_byte);	
+void Gripper::set_vertical_right() {
+	this->set_target(vr_high_byte, vr_low_byte);
 }
 
 #endif /* GRIPPER_CPP_ */
