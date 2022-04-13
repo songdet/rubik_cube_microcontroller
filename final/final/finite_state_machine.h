@@ -11,8 +11,8 @@
 #include "arm.h"
 #include "gripper.h"
 
-#define FSM_WAIT_ROTATION_MS = 1000
-#define FSM_WAIT_ARM_MS = 1000
+#define FSM_WAIT_ROTATION_MS 1000
+#define FSM_WAIT_ARM_MS 1000
 
 enum Isa {
 	ST = 0,
@@ -23,7 +23,7 @@ enum Isa {
 	MH = 5,
 	MHCCW = 6,
 	RLC = 7,
-	RLCCCW = 8,
+	RLCCW = 8,
 	RRC = 9,
 	RRCCW = 10,
 	RBC = 11,
@@ -60,6 +60,17 @@ class FiniteStateMachine {
 		void hh_to_st();
 		void hv_to_st();
 		void gr_to_rlc();
+		void gr_to_rlccw();
+		void gr_to_rrc();
+		void gr_to_rrccw();
+		void gr_to_rbc();
+		void gr_to_rbccw();
+		void gr_to_rtc();
+		void gr_to_rtccw();
+		void gr_to_mv();
+		void gr_to_mh();
+		void gr_to_mhccw();
+		void reset_rotate_to_gr(Gripper* gripper, Arm* arm);
 	public:
 		FiniteStateMachine(GripperControls grippers, ArmControls arms);
 		void transition(Isa isa);

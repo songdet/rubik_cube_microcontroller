@@ -11,7 +11,7 @@
 
 #include <stdint.h>
 
-#define GRIPPER_CMD_WAIT_TIME_MS = 50;
+#define GRIPPER_CMD_WAIT_TIME_MS 50
 
 class Gripper {
 	private:
