@@ -9,6 +9,7 @@
 #define FINITE_STATE_MACHINE_CPP_
 
 #include "finite_state_machine.h"
+#include "arm_controls.h"
 #include "wait.h"
 
 FiniteStateMachine::FiniteStateMachine(GripperControls grippers, ArmControls arms) : grippers(grippers), arms(arms), current_state(ST) {
@@ -22,6 +23,9 @@ void FiniteStateMachine::transition(Isa isa) {
 		if (isa == GR) {
 			this->st_to_gr();
 			this->current_state = GR;
+		} else if (isa == DT) {
+			this->st_to_dt();
+			this->current_state = DT;
 		}
 	} else if (this->current_state == GR) {
 		// Handle all the different transitions from GR to other states
@@ -54,6 +58,8 @@ void FiniteStateMachine::transition(Isa isa) {
 			this->gr_to_mv();
 		} else if (isa == MH) {
 			this->gr_to_mh();
+		} else if (isa == MHCCW) {
+			this->gr_to_mhccw();
 		}
 	} else if (this->current_state == HV) {
 		// Handle all the different transitions from HV to other states
@@ -73,6 +79,12 @@ void FiniteStateMachine::transition(Isa isa) {
 			this->hh_to_st();
 			this->current_state = ST;
 		}
+	} else if (this->current_state == DT) {
+		// Handle all the different transitions from DT to other states
+		if (isa == ST) {
+			this->dt_to_st();
+			this->current_state = ST;
+		}
 	}
 }
 
@@ -81,202 +93,211 @@ bool FiniteStateMachine::machine_started() {
 }
 
 void FiniteStateMachine::st_to_gr() {
-	this->arms.left_arm.extend();
-	this->arms.right_arm.extend();
-	this->arms.top_arm.extend();
-	this->arms.bottom_arm.extend();
+	this->arms.extend(ARM_CONTROLS_TOP_BOTTOM);
+	wait(500, 2);
+	this->arms.extend(ARM_CONTROLS_LEFT_RIGHT);
+}
+
+void FiniteStateMachine::st_to_dt() {
+	this->grippers.bottom_gripper.set_detect();
+	this->grippers.top_gripper.set_detect();
+	wait(FSM_WAIT_ROTATION_MS, 2);
+	this->arms.detect(ARM_CONTROLS_TOP_BOTTOM);
 }
 
 void FiniteStateMachine::gr_to_hv() {
-	this->arms.left_arm.retract();
-	this->arms.right_arm.retract();
+	this->arms.retract(ARM_CONTROLS_LEFT_RIGHT);
 }
 
 void FiniteStateMachine::gr_to_hh() {
-	this->arms.top_arm.retract();
-	this->arms.bottom_arm.retract();
+	this->arms.lock_arms(ARM_CONTROLS_LEFT_RIGHT);
+	this->arms.retract(ARM_CONTROLS_TOP_BOTTOM);
 }
 
 void FiniteStateMachine::hv_to_gr() {
-	this->arms.left_arm.extend();
-	this->arms.right_arm.extend();
+	this->arms.extend(ARM_CONTROLS_LEFT_RIGHT);
 }
 
 void FiniteStateMachine::hh_to_gr() {
-	this->arms.top_arm.extend();
-	this->arms.bottom_arm.extend();	
+	this->arms.extend(ARM_CONTROLS_TOP_BOTTOM);
+	wait(FSM_WAIT_ARM_MS, 2);
+	this->arms.unlock_arms(ARM_CONTROLS_LEFT_RIGHT);
 }
 
 void FiniteStateMachine::gr_to_st() {
-	this->arms.left_arm.retract();
-	this->arms.right_arm.retract();
-	this->arms.top_arm.retract();
-	this->arms.right_arm.retract();
+	this->arms.retract(ARM_CONTROLS_ALL);
 }
 
 void FiniteStateMachine::hh_to_st() {
-	this->arms.left_arm.retract();
-	this->arms.right_arm.retract();
+	this->arms.retract(ARM_CONTROLS_LEFT_RIGHT);
+	wait(FSM_WAIT_ARM_MS, 2);
+	this->arms.unlock_arms(ARM_CONTROLS_LEFT_RIGHT);
 }
 
 void FiniteStateMachine::hv_to_st() {
-	this->arms.top_arm.retract();
-	this->arms.right_arm.retract();
+	this->arms.retract(ARM_CONTROLS_TOP_BOTTOM);
 }
 
 void FiniteStateMachine::gr_to_rlc() {
 	this->grippers.left_gripper.set_vertical_right();
 	wait(FSM_WAIT_ROTATION_MS, 2);
-	this->reset_rotate_to_gr(&(this->grippers.left_gripper), &(this->arms.left_arm));
+	this->reset_rotate_to_gr(&(this->grippers.left_gripper), ARM_CONTROLS_LEFT);
 }
 
 void FiniteStateMachine::gr_to_rlccw() {
 	this->grippers.left_gripper.set_vertical_left();
 	wait(FSM_WAIT_ROTATION_MS, 2);
-	this->reset_rotate_to_gr(&(this->grippers.left_gripper), &(this->arms.left_arm));
+	this->reset_rotate_to_gr(&(this->grippers.left_gripper), ARM_CONTROLS_LEFT);
 }
 
 void FiniteStateMachine::gr_to_rrc() {
 	this->grippers.right_gripper.set_vertical_right();
 	wait(FSM_WAIT_ROTATION_MS, 2);
-	this->reset_rotate_to_gr(&(this->grippers.right_gripper), &(this->arms.right_arm));
+	this->reset_rotate_to_gr(&(this->grippers.right_gripper), ARM_CONTROLS_RIGHT);
 }
 
 void FiniteStateMachine::gr_to_rrccw() {
 	this->grippers.right_gripper.set_vertical_left();
 	wait(FSM_WAIT_ROTATION_MS, 2);
-	this->reset_rotate_to_gr(&(this->grippers.right_gripper), &(this->arms.right_arm));
+	this->reset_rotate_to_gr(&(this->grippers.right_gripper), ARM_CONTROLS_RIGHT);
 }
 
 void FiniteStateMachine::gr_to_rbc() {
 	this->grippers.bottom_gripper.set_vertical_right();
 	wait(FSM_WAIT_ROTATION_MS, 2);
-	this->reset_rotate_to_gr(&(this->grippers.bottom_gripper), &(this->arms.bottom_arm));
+	this->arms.lock_arms(ARM_CONTROLS_LEFT_RIGHT);
+	this->reset_rotate_to_gr(&(this->grippers.bottom_gripper), ARM_CONTROLS_BOTTOM);
+	this->arms.unlock_arms(ARM_CONTROLS_LEFT_RIGHT);
 }
 
 void FiniteStateMachine::gr_to_rbccw() {
 	this->grippers.bottom_gripper.set_vertical_left();
 	wait(FSM_WAIT_ROTATION_MS, 2);
-	this->reset_rotate_to_gr(&(this->grippers.bottom_gripper), &(this->arms.bottom_arm));
+	this->arms.lock_arms(ARM_CONTROLS_LEFT_RIGHT);
+	this->reset_rotate_to_gr(&(this->grippers.bottom_gripper), ARM_CONTROLS_BOTTOM);
+	this->arms.unlock_arms(ARM_CONTROLS_LEFT_RIGHT);
 }
 
 void FiniteStateMachine::gr_to_rtc() {
 	this->grippers.top_gripper.set_vertical_right();
 	wait(FSM_WAIT_ROTATION_MS, 2);
-	this->reset_rotate_to_gr(&(this->grippers.top_gripper), &(this->arms.top_arm));
+	this->reset_rotate_to_gr(&(this->grippers.top_gripper), ARM_CONTROLS_TOP);
 }
 
 void FiniteStateMachine::gr_to_rtccw() {
 	this->grippers.top_gripper.set_vertical_left();
 	wait(FSM_WAIT_ROTATION_MS, 2);
-	this->reset_rotate_to_gr(&(this->grippers.bottom_gripper), &(this->arms.bottom_arm));
+	this->reset_rotate_to_gr(&(this->grippers.top_gripper), ARM_CONTROLS_TOP);
 }
 
 void FiniteStateMachine::gr_to_mv() {
-	this->arms.left_arm.retract();
+	this->arms.retract(ARM_CONTROLS_LEFT);
 	wait(FSM_WAIT_ARM_MS, 2);
 	
 	this->grippers.left_gripper.set_vertical_right();
 	wait(FSM_WAIT_ROTATION_MS, 2);
 	
-	this->arms.left_arm.extend();
+	this->arms.extend(ARM_CONTROLS_LEFT);
 	wait(FSM_WAIT_ARM_MS, 2);
 	
-	this->arms.top_arm.retract();
-	this->arms.bottom_arm.retract();
+	this->arms.retract(ARM_CONTROLS_TOP_BOTTOM);
 	wait(FSM_WAIT_ARM_MS, 2);
 	
 	this->grippers.left_gripper.set_horizontal();
 	this->grippers.right_gripper.set_vertical_right();
 	wait(FSM_WAIT_ROTATION_MS, 2);
 	
-	this->arms.top_arm.extend();
-	this->arms.bottom_arm.extend();
+	this->arms.extend(ARM_CONTROLS_TOP_BOTTOM);
 	wait(FSM_WAIT_ARM_MS, 2);
 	
-	this->arms.right_arm.retract();
+	this->arms.retract(ARM_CONTROLS_RIGHT);
 	wait(FSM_WAIT_ARM_MS, 2);
 	
 	this->grippers.right_gripper.set_horizontal();
 	wait(FSM_WAIT_ROTATION_MS, 2);
 	
-	this->arms.right_arm.extend();
+	this->arms.extend(ARM_CONTROLS_RIGHT);
 	wait(FSM_WAIT_ARM_MS, 2);
 }
 
 void FiniteStateMachine::gr_to_mh() {
-	this->arms.top_arm.retract();
+	this->arms.retract(ARM_CONTROLS_TOP);
 	wait(FSM_WAIT_ARM_MS, 2);
 	
 	this->grippers.top_gripper.set_vertical_right();
 	wait(FSM_WAIT_ROTATION_MS, 2);
-	
-	this->arms.top_arm.extend();
+
+	this->arms.extend(ARM_CONTROLS_TOP);
 	wait(FSM_WAIT_ARM_MS, 2);
 	
-	this->arms.left_arm.retract();
-	this->arms.right_arm.retract();
+	this->arms.retract(ARM_CONTROLS_LEFT_RIGHT);
 	wait(FSM_WAIT_ARM_MS, 2);
 	
 	this->grippers.top_gripper.set_horizontal();
 	this->grippers.bottom_gripper.set_vertical_right();
 	wait(FSM_WAIT_ROTATION_MS, 2);
 	
-	this->arms.left_arm.extend();
-	this->arms.right_arm.extend();
+	this->arms.extend(ARM_CONTROLS_LEFT_RIGHT);
 	wait(FSM_WAIT_ARM_MS, 2);
 	
-	this->arms.bottom_arm.retract();
+	this->arms.lock_arms(ARM_CONTROLS_LEFT_RIGHT);
+	this->arms.retract(ARM_CONTROLS_BOTTOM);
 	wait(FSM_WAIT_ARM_MS, 2);
 	
 	this->grippers.bottom_gripper.set_horizontal();
 	wait(FSM_WAIT_ROTATION_MS, 2);
 	
-	this->arms.bottom_arm.extend();
+	this->arms.extend(ARM_CONTROLS_BOTTOM);
 	wait(FSM_WAIT_ARM_MS, 2);
+	this->arms.unlock_arms(ARM_CONTROLS_LEFT_RIGHT);
 }
 
 void FiniteStateMachine::gr_to_mhccw() {
-	this->arms.top_arm.retract();
+	this->arms.retract(ARM_CONTROLS_TOP);
 	wait(FSM_WAIT_ARM_MS, 2);
 	
 	this->grippers.top_gripper.set_vertical_left();
 	wait(FSM_WAIT_ROTATION_MS, 2);
 	
-	this->arms.top_arm.extend();
+	this->arms.extend(ARM_CONTROLS_TOP);
 	wait(FSM_WAIT_ARM_MS, 2);
-	
-	this->arms.left_arm.retract();
-	this->arms.right_arm.retract();
+
+	this->arms.retract(ARM_CONTROLS_LEFT_RIGHT);
 	wait(FSM_WAIT_ARM_MS, 2);
 	
 	this->grippers.top_gripper.set_horizontal();
 	this->grippers.bottom_gripper.set_vertical_left();
 	wait(FSM_WAIT_ROTATION_MS, 2);
-	
-	this->arms.left_arm.extend();
-	this->arms.right_arm.extend();
+
+	this->arms.extend(ARM_CONTROLS_LEFT_RIGHT);
 	wait(FSM_WAIT_ARM_MS, 2);
-	
-	this->arms.bottom_arm.retract();
+
+	this->arms.retract(ARM_CONTROLS_BOTTOM);
 	wait(FSM_WAIT_ARM_MS, 2);
 	
 	this->grippers.bottom_gripper.set_horizontal();
 	wait(FSM_WAIT_ROTATION_MS, 2);
-	
-	this->arms.bottom_arm.extend();
+
+	this->arms.extend(ARM_CONTROLS_BOTTOM);
 	wait(FSM_WAIT_ARM_MS, 2);
 }
 
-void FiniteStateMachine::reset_rotate_to_gr(Gripper* gripper, Arm* arm) {
-	(*arm).retract();
+void FiniteStateMachine::reset_rotate_to_gr(Gripper* gripper, uint8_t arm_mask) {
+	this->arms.retract(arm_mask);
 	wait(FSM_WAIT_ARM_MS, 2);
 	
 	(*gripper).set_horizontal();
 	wait(FSM_WAIT_ROTATION_MS, 2);
 	
-	(*arm).extend();
+	this->arms.extend(arm_mask);
 	wait(FSM_WAIT_ARM_MS, 2);
+}
+
+void FiniteStateMachine::dt_to_st() {
+	this->arms.retract(ARM_CONTROLS_TOP_BOTTOM);
+	wait(FSM_WAIT_ARM_MS, 2);
+	this->grippers.bottom_gripper.set_horizontal();
+	this->grippers.top_gripper.set_horizontal();
 }
 
 #endif /* FINITE_STATE_MACHINE_CPP_ */

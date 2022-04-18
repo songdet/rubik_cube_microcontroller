@@ -173,6 +173,12 @@
     <Compile Include="arm.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="arm_controls.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="arm_controls.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="button.cpp">
       <SubType>compile</SubType>
     </Compile>
@@ -198,6 +204,12 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="main.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="servo_arm.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="servo_arm.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="SWseriale.cpp">

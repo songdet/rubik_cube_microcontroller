@@ -9,6 +9,7 @@
 #include "button.h"
 #include "gripper.h"
 #include "arm.h"
+#include "servo_arm.h"
 #include "control_communication.h"
 #include "finite_state_machine.h"
 
@@ -21,18 +22,18 @@ int main(void)
 	Button(0x04, RESET); // The reset button is on PC2 and when pressed, send the 'R' command
 	
 	// Set up the gripper objects that are used to control the gripper
-	Gripper left_gripper = Gripper(0, 550, 1200, 1840);
-	Gripper right_gripper = Gripper(1, 550, 1200, 1840);
-	Gripper top_gripper = Gripper(2, 550, 1150, 1800);
-	Gripper bottom_gripper = Gripper(3, 600, 1250, 1900);
+	Gripper left_gripper = Gripper(0, 490, 1200, 1870, 1200);
+	Gripper right_gripper = Gripper(1, 500, 1150, 1860, 1150);
+	Gripper top_gripper = Gripper(2, 480, 1180, 1840, 500);
+	Gripper bottom_gripper = Gripper(3, 550, 1260, 1920, 600);
 	GripperControls gripper_controls = { left_gripper, right_gripper, top_gripper, bottom_gripper };
 	
 	// Set up the arm objects used to control the arms
-	Arm left_arm = Arm(&PORTB, &DDRB, 0x01, 0x02);
-	Arm right_arm = Arm(&PORTB, &DDRB, 0x04, 0x08);
-	Arm top_arm = Arm(&PORTB, &DDRB, 0x10, 0x20);
-	Arm bottom_arm = Arm(&PORTD, &DDRD, 0x20, 0x40);
-	ArmControls arm_controls = { left_arm, right_arm, top_arm, bottom_arm };
+	Arm left_arm = Arm(&PORTB, &DDRB, 0x01, 0x02, 60, 60);
+	Arm right_arm = Arm(&PORTB, &DDRB, 0x04, 0x08, 60, 60);
+	ServoArm top_arm = ServoArm(4, 400, 1650, 600);
+	ServoArm bottom_arm = ServoArm(5, 600, 1750, 600);
+	ArmControls arm_controls = ArmControls(left_arm, right_arm,top_arm, bottom_arm);
 		
 	// Set up finite state machine that will keep track of state and does operation during transition
 	FiniteStateMachine machine_state = FiniteStateMachine(gripper_controls, arm_controls);
@@ -46,33 +47,33 @@ int main(void)
 	// Enable global interrupt
 	sei();
 	
+	// Set the machine to default state
+	left_gripper.set_horizontal();
+	right_gripper.set_horizontal();
+	top_gripper.set_horizontal();
+	bottom_gripper.set_horizontal();
+	top_arm.retract();
+	bottom_arm.retract();
+	
     while (1) 
     {
-		// Check if button has been pushed during transition
-		ButtonType pushed_button = UNSET;
-		if (is_button_pushed()) {
-			pushed_button = get_pushed_button();
-		}
+		// Loop waiting for button to be pushed
+		while (!is_button_pushed());
+		ButtonType pushed_button = get_pushed_button();
 
-		// Send command to control server based on which button was pushed and whether machine is started		
-		bool machine_started = machine_state.machine_started();
-		if (!machine_started && pushed_button == START) {
+		// Send command based on what button was pushed		
+		if (pushed_button == START) {
 			send_command('O');
-			machine_started = true;
-		} else if (machine_started && pushed_button == STOP) {
+		} else if (pushed_button == STOP) {
 			send_command('S');
-		} else if (machine_started && pushed_button == RESET) {
+		} else if ( pushed_button == RESET) {
 			send_command('R');
-		} else if (machine_started) {
-			send_command('O');
-		}
+		} 
 		
-		// Hang wait until we get new command from control server
-		if (machine_started) {
-			while (!has_new_command());
-			uint8_t new_command = receive_command();
-			machine_state.transition(static_cast<Isa>(new_command));	
-		}
+		// Loop waiting for new command
+		while (!has_new_command());
+		uint8_t new_command = receive_command();
+		machine_state.transition(static_cast<Isa>(new_command));	
 		
 		// We don't really need the returned data, but read to clear buffer
 		while (SWseriale_available()) {
