@@ -22,17 +22,17 @@ int main(void)
 	Button(0x04, RESET); // The reset button is on PC2 and when pressed, send the 'R' command
 	
 	// Set up the gripper objects that are used to control the gripper
-	Gripper left_gripper = Gripper(0, 490, 1200, 1870, 1200);
-	Gripper right_gripper = Gripper(1, 500, 1150, 1860, 1150);
-	Gripper top_gripper = Gripper(2, 480, 1180, 1840, 500);
-	Gripper bottom_gripper = Gripper(3, 550, 1260, 1920, 600);
+	Gripper left_gripper = Gripper(0, 500, 1200, 1850, 1200);
+	Gripper right_gripper = Gripper(1, 460, 1100, 1760, 1100);
+	Gripper top_gripper = Gripper(2, 550, 1180, 1840, 550);
+	Gripper bottom_gripper = Gripper(3, 600, 1260, 1900, 600);
 	GripperControls gripper_controls = { left_gripper, right_gripper, top_gripper, bottom_gripper };
 	
 	// Set up the arm objects used to control the arms
 	Arm left_arm = Arm(&PORTB, &DDRB, 0x01, 0x02, 60, 60);
 	Arm right_arm = Arm(&PORTB, &DDRB, 0x04, 0x08, 60, 60);
 	ServoArm top_arm = ServoArm(4, 400, 1650, 600);
-	ServoArm bottom_arm = ServoArm(5, 600, 1750, 600);
+	ServoArm bottom_arm = ServoArm(5, 550, 1750, 550);
 	ArmControls arm_controls = ArmControls(left_arm, right_arm,top_arm, bottom_arm);
 		
 	// Set up finite state machine that will keep track of state and does operation during transition

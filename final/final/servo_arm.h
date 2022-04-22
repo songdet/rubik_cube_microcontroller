@@ -9,7 +9,7 @@
 #ifndef SERVO_ARM_H_
 #define SERVO_ARM_H_
 
-#define SERVO_ARM_CMD_WAIT_TIME_MS 100
+#define SERVO_ARM_CMD_WAIT_TIME_MS 50
 
 #include <stdint.h>
 
